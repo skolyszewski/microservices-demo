@@ -1,0 +1,31 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: bap-pipeline-run
+  namespace: tekton-pipelines
+spec:
+  serviceAccountName: build-and-publish-bot
+  pipelineRef:
+    name: build-docker-image
+  params:
+    - name: gitUrl
+      value: git@github.com:skolyszewski/microservices-demo.git
+    - name: gitRevision
+      value: main
+    - name: pathToContext
+      value: src/emailservice
+    - name: pathToDockerfile
+      value: src/emailservice/Dockerfile
+    - name: imageUrl
+      value: docker.io/skolyszewski/emailservice
+    - name: imageTag
+      value: test
+  workspaces:
+    - name: git-source
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 200Mi

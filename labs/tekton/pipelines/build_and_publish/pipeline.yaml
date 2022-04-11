@@ -1,0 +1,45 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: build-docker-image
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: gitUrl
+    - name: gitRevision
+    - name: imageUrl
+    - name: imageTag
+    - name: pathToContext
+    - name: pathToDockerfile
+  workspaces:
+    - name: git-source
+  tasks:
+    - name: git-clone
+      taskRef:
+        name: git-clone
+      params:
+        - name: url
+          value: $(params.gitUrl)
+        - name: revision
+          value: $(params.gitRevision)
+      workspaces:
+        - name: output
+          workspace: git-source
+    - name: build-image
+      taskRef:
+        name: build-docker-image
+      runAfter:
+        - git-clone
+      params:
+        - name: imageUrl
+          value: $(params.imageUrl)
+        - name: imageTag
+          value: $(params.imageTag)
+        - name: pathToContext
+          value: $(params.pathToContext)
+        - name: pathToDockerfile
+          value: $(params.pathToDockerfile)
+      workspaces:
+        - name: source
+          workspace: git-source

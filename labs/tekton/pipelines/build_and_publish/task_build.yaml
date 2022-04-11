@@ -1,0 +1,30 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: build-docker-image
+  namespace: tekton-pipelines
+spec:
+  params:
+  - name: pathToContext
+    description:
+      The build directory used by img
+  - name: pathToDockerfile
+    type: string
+    description: The path to the dockerfile to build
+  - name: imageUrl
+    type: string
+  - name: imageTag
+    type: string
+  workspaces:
+  - name: source
+  steps:
+    - name: build-and-push
+      image: gcr.io/kaniko-project/executor:v0.16.0
+      env:
+        - name: "DOCKER_CONFIG"
+          value: /tekton/creds/.docker
+      args:
+        - --dockerfile=$(workspaces.source.path)/project/$(params.pathToDockerfile)
+        - --destination=$(params.imageUrl):$(params.imageTag)
+        - --context=$(workspaces.source.path)/project/$(params.pathToContext)
