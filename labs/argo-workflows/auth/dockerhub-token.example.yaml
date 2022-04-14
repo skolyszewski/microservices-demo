@@ -1,0 +1,8 @@
+apiVersion: v1
+data:
+  username: deadbeef
+  token: deadbeef
+kind: Secret
+metadata:
+  name: dockerhub-token
+  namespace: argo

@@ -1,0 +1,124 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: build-and-push-
+spec:
+  entrypoint: clone-build-push
+  templates:
+    - name: clone-build-push
+      inputs:
+        parameters:
+          - name: gitUrl
+          - name: imageUrl
+          - name: imageTag
+          - name: pathToContext
+          - name: pathToDockerfile
+      steps:
+        - - name: clone
+            template: clone
+            arguments:
+              parameters:
+                - name: gitUrl
+                  value: "{{inputs.parameters.gitUrl}}"
+          - name: prepare-docker-config
+            template: create-docker-config
+        - - name: build-and-push
+            template: build-and-push
+            arguments:
+              parameters:
+                - name: imageUrl
+                  value: "{{inputs.parameters.imageUrl}}"
+                - name: imageTag
+                  value: "{{inputs.parameters.imageTag}}"
+                - name: pathToContext
+                  value: "{{inputs.parameters.pathToContext}}"
+                - name: pathToDockerfile
+                  value: "{{inputs.parameters.pathToDockerfile}}"
+              artifacts:
+                - name: source
+                  from: "{{steps.clone.outputs.artifacts.source}}"
+                - name: docker-config
+                  from: "{{steps.prepare-docker-config.outputs.artifacts.docker-config}}"
+    - name: clone
+      inputs:
+        parameters:
+          - name: gitUrl
+      outputs:
+        artifacts:
+          - name: source
+            path: /tmp/project
+      script:
+        image: alpine/git
+        command: [/bin/sh]
+        volumeMounts:
+          - name: ssh-secret-vol
+            mountPath: /secrets
+        source: |
+          #!/usr/bin/env sh
+          set -eu
+
+          mkdir -p /root/.ssh
+          cat /secrets/id_ed25519 > /root/.ssh/id_ed25519
+          chmod 0600 /root/.ssh/id_ed25519
+          ssh-keyscan github.com >> /root/.ssh/known_hosts
+
+          cd /tmp
+          git clone --verbose "{{inputs.parameters.gitUrl}}" project
+    - name: create-docker-config
+      outputs:
+        artifacts:
+          - name: docker-config
+            path: /tmp/config.json
+      script:
+        image: alpine
+        command: [/bin/sh]
+        source: |
+          AUTH=$(echo -n "${REGISTRY_USER}:${REGISTRY_PASSWORD}" | base64)
+          cat << EOF > /tmp/config.json
+          {
+              "auths": {
+                  "https://index.docker.io/v1/": {
+                      "auth": "${AUTH}"
+                  }
+              }
+          }
+          EOF
+        env:
+          - name: REGISTRY_USER
+            valueFrom:
+              secretKeyRef:
+                name: dockerhub-token
+                key: username
+          - name: REGISTRY_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: dockerhub-token
+                key: token
+    - name: build-and-push
+      inputs:
+        artifacts:
+          - name: source
+            path: /tmp/project
+          - name: docker-config
+            path: /kaniko/.docker/config.json
+        parameters:
+          - name: imageUrl
+          - name: imageTag
+          - name: pathToContext
+          - name: pathToDockerfile
+      container:
+        image: gcr.io/kaniko-project/executor:v1.8.1
+        command: [/kaniko/executor]
+        # THIS FEATURE IS AWESOME!
+        # leaving it here so I don't forget about it
+        # env:
+        #   - name: ARGO_DEBUG_PAUSE_BEFORE
+        #     value: 'true'
+        args:
+          - "--dockerfile=/tmp/project/{{inputs.parameters.pathToDockerfile}}"
+          - "--destination={{inputs.parameters.imageUrl}}:{{inputs.parameters.imageTag}}"
+          - "--context=/tmp/project/{{inputs.parameters.pathToContext}}"
+  volumes:
+    - name: ssh-secret-vol
+      secret:
+        secretName: github-ssh-key

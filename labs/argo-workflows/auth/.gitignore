@@ -1,0 +1,4 @@
+# ignore secrets, exclude examples and kustomization
+*.yaml
+!kustomization.yaml
+!*.example.yaml
