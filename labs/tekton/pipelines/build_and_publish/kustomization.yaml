@@ -1,0 +1,4 @@
+resources:
+  - pipeline.yaml
+  - task_clone.yaml
+  - task_build.yaml
