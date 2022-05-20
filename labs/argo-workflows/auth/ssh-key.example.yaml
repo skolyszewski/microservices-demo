@@ -1,0 +1,7 @@
+apiVersion: v1
+data:
+  id_ed25519: deadbeef
+kind: Secret
+metadata:
+  name: github-ssh-key
+  namespace: argo

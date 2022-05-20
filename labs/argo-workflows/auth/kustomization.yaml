@@ -1,0 +1,5 @@
+namespace: argo
+resources:
+  - dockerhub-token.yaml
+  - ssh-key.yaml
+

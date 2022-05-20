@@ -1,0 +1,6 @@
+gitUrl: git@github.com:skolyszewski/microservices-demo.git
+gitRevision: main
+imageUrl: docker.io/skolyszewski/emailservice
+imageTag: by-argo-workflows
+pathToContext: src/emailservice
+pathToDockerfile: src/emailservice/Dockerfile
