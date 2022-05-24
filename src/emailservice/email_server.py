@@ -33,8 +33,8 @@ from grpc_health.v1 import health_pb2_grpc
 from prometheus_client import Counter, start_http_server, Summary
 
 # Create a metric to track time spent and requests made.
-REQUEST_TIME = Summary('requests_processing_seconds', 'Time spent processing request', ('service'))
-REQUEST_FAILED = Counter('requests_failed', 'Number of failed requests', ('service'))
+REQUEST_TIME = Summary('requests_processing_seconds', 'Time spent processing request', ('service',))
+REQUEST_FAILED = Counter('requests_failed', 'Number of failed requests', ('service',))
 
 from opencensus.ext.stackdriver import trace_exporter as stackdriver_exporter
 from opencensus.ext.grpc import server_interceptor
