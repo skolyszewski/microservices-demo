@@ -20,6 +20,7 @@ import os
 import sys
 import time
 import grpc
+import random
 import traceback
 from jinja2 import Environment, FileSystemLoader, select_autoescape, TemplateError
 from google.api_core.exceptions import GoogleAPICallError
@@ -29,10 +30,11 @@ import demo_pb2
 import demo_pb2_grpc
 from grpc_health.v1 import health_pb2
 from grpc_health.v1 import health_pb2_grpc
-from prometheus_client import start_http_server, Summary
+from prometheus_client import Counter, start_http_server, Summary
 
 # Create a metric to track time spent and requests made.
-REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request')
+REQUEST_TIME = Summary('requests_processing_seconds', 'Time spent processing request', ('service'))
+REQUEST_FAILED = Counter('requests_failed', 'Number of failed requests', ('service'))
 
 from opencensus.ext.stackdriver import trace_exporter as stackdriver_exporter
 from opencensus.ext.grpc import server_interceptor
@@ -117,9 +119,14 @@ class EmailService(BaseEmailService):
     return demo_pb2.Empty()
 
 class DummyEmailService(BaseEmailService):
-  @REQUEST_TIME.time()
+  SendOrderRequestTime = REQUEST_TIME.labels('SendOrderConfirmation')
+  @SendOrderRequestTime.time()
   def SendOrderConfirmation(self, request, context):
-    logger.info('A request to send order confirmation email to {} has been received.'.format(request.email))
+    if random.randint(0, 99) == 50:
+      logger.error('Failed to send order confirmation email to {}'.format(request.email))
+      REQUEST_FAILED.labels('SendOrderConfirmation').inc()
+    else:
+      logger.info('A request to send order confirmation email to {} has been received.'.format(request.email))
     return demo_pb2.Empty()
 
 class HealthCheck():

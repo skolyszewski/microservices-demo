@@ -73,6 +73,9 @@ spec:
   - name: grpc
     port: 5000
     targetPort: 8080
+  - name: metrics
+    port: 8000
+    targetPort: 8000
 ---
 apiVersion: apps/v1
 kind: Deployment

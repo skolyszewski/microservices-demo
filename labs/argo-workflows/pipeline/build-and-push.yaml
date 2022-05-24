@@ -9,6 +9,7 @@ spec:
       inputs:
         parameters:
           - name: gitUrl
+          - name: gitRevision
           - name: imageUrl
           - name: imageTag
           - name: pathToContext
@@ -20,6 +21,8 @@ spec:
               parameters:
                 - name: gitUrl
                   value: "{{inputs.parameters.gitUrl}}"
+                - name: gitRevision
+                  value: "{{inputs.parameters.gitRevision}}"
           - name: prepare-docker-config
             template: create-docker-config
         - - name: build-and-push
@@ -43,6 +46,7 @@ spec:
       inputs:
         parameters:
           - name: gitUrl
+          - name: gitRevision
       outputs:
         artifacts:
           - name: source
@@ -63,7 +67,7 @@ spec:
           ssh-keyscan github.com >> /root/.ssh/known_hosts
 
           cd /tmp
-          git clone --verbose "{{inputs.parameters.gitUrl}}" project
+          git clone -b "{{inputs.parameters.gitRevision}}" --verbose "{{inputs.parameters.gitUrl}}" project
     - name: create-docker-config
       outputs:
         artifacts:
