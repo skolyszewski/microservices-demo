@@ -29,6 +29,10 @@ import demo_pb2
 import demo_pb2_grpc
 from grpc_health.v1 import health_pb2
 from grpc_health.v1 import health_pb2_grpc
+from prometheus_client import start_http_server, Summary
+
+# Create a metric to track time spent and requests made.
+REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request')
 
 from opencensus.ext.stackdriver import trace_exporter as stackdriver_exporter
 from opencensus.ext.grpc import server_interceptor
@@ -113,6 +117,7 @@ class EmailService(BaseEmailService):
     return demo_pb2.Empty()
 
 class DummyEmailService(BaseEmailService):
+  @REQUEST_TIME.time()
   def SendOrderConfirmation(self, request, context):
     logger.info('A request to send order confirmation email to {} has been received.'.format(request.email))
     return demo_pb2.Empty()
@@ -172,6 +177,17 @@ def initStackdriverProfiling():
 
 if __name__ == '__main__':
   logger.info('starting the email service in dummy mode.')
+
+  # Metrics
+  try:
+    if "DISABLE_METRICS" in os.environ:
+      raise KeyError()
+    else:
+      logger.info("Metrics enabled.")
+      metrics_port=os.environ.get("METRICS_PORT", 8000)
+      start_http_server(metrics_port)
+  except KeyError:
+      logger.info("Metrics disabled.")
 
   # Profiler
   try:

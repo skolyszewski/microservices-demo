@@ -1,4 +1,4 @@
-gitUrl: git@github.com:skolyszewski/microservices-demo.git
+gitUrl: https://github.com/skolyszewski/microservices-demo.git
 gitRevision: main
 imageUrl: docker.io/skolyszewski/emailservice
 imageTag: by-argo-workflows
